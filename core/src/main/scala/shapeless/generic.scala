@@ -407,7 +407,13 @@ trait CaseClassMacros extends ReprTypes {
         }
       val baseArgs = baseTpe.dealias.typeArgs
 
-      val ctorSyms = collectCtors(baseSym).sortBy(_.fullName)
+      def orderSyms(s1: Symbol, s2: Symbol): Boolean = {
+        val fn1 = s1.fullName
+        val fn2 = s2.fullName
+        fn1 < fn2 || (fn1 == fn2 && isLess(s1, s2))
+      }
+
+      val ctorSyms = collectCtors(baseSym).sortWith(orderSyms)
       val ctors =
         ctorSyms flatMap { sym =>
           def normalizeTermName(name: Name): TermName =
@@ -535,7 +541,7 @@ trait CaseClassMacros extends ReprTypes {
 
       case TypeRef(pre, _, args) if isVararg(tpe) =>
         val argTrees = args.map(mkTypTree)
-        AppliedTypeTree(tq"_root_.scala.collection.Seq", argTrees)
+        AppliedTypeTree(tq"_root_.scala.collection.immutable.Seq", argTrees)
 
       case t => tq"$t"
     }
@@ -756,6 +762,13 @@ trait CaseClassMacros extends ReprTypes {
     global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
   }
 
+  def isLess(sym1: Symbol, sym2: Symbol): Boolean = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gSym1 = sym1.asInstanceOf[global.Symbol]
+    val gSym2 = sym2.asInstanceOf[global.Symbol]
+    gSym1.isLess(gSym2)
+  }
+
   def isNonGeneric(sym: Symbol): Boolean = {
     def check(sym: Symbol): Boolean = {
       // See https://issues.scala-lang.org/browse/SI-7424
@@ -780,7 +793,7 @@ trait CaseClassMacros extends ReprTypes {
   def devarargify(tpe: Type): Type =
     tpe match {
       case TypeRef(pre, _, args) if isVararg(tpe) =>
-        appliedType(typeOf[scala.collection.Seq[_]].typeConstructor, args)
+        appliedType(typeOf[scala.collection.immutable.Seq[_]].typeConstructor, args)
       case _ => tpe
     }
 

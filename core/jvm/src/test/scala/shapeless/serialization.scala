@@ -21,7 +21,9 @@ import java.io._
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.collection.generic.CanBuildFrom
+import scala.collection.{ BuildFrom, Factory, IterableOps }
+import scala.collection.generic.IsIterableLike
+import scala.collection.mutable.Builder
 
 import labelled._
 import nat._
@@ -274,14 +276,28 @@ object SerializationTestDefns {
   }
 
   /**
-   * A `CanBuildFrom` for `List` implementing `Serializable`, unlike the one provided by the standard library.
+   * A `Factory` for `List` implementing `Serializable`, unlike the one provided by the standard library.
    */
-  implicit def listSerializableCanBuildFrom[T]: CanBuildFrom[List[T], T, List[T]] =
-    new CanBuildFrom[List[T], T, List[T]] with Serializable {
-      def apply(from: List[T]) = from.genericBuilder[T]
-      def apply() = List.newBuilder[T]
+  implicit def listSerializableFactory[T]: Factory[T, List[T]] =
+    new Factory[T, List[T]] with Serializable {
+      def fromSpecific(it: IterableOnce[T]): List[T] = List.from(it)
+      def newBuilder: Builder[T, List[T]] = List.newBuilder
     }
 
+  /**
+   * A `BuildFrom` for `List` implementing `Serializable`, unlike the one provided by the standard library.
+   */
+  implicit def listSerializableBuildFrom[From, T]: BuildFrom[From, T, List[T]] =
+    new BuildFrom[From, T, List[T]] with Serializable {
+      def fromSpecificIterable(from: From)(it: Iterable[T]): List[T] = List.from(it)
+      def newBuilder(from: From): Builder[T, List[T]] = List.newBuilder
+    }
+
+  implicit def listSerializableIsIterableLike[T]: IsIterableLike[List[T]] { type A = T } =
+    new IsIterableLike[List[T]] with Serializable {
+      type A = T
+      val conversion: List[T] => IterableOps[T, Iterable, List[T]] = identity
+    }
 }
 
 class SerializationTests {
@@ -968,12 +984,7 @@ class SerializationTests {
   def testTraversable: Unit = {
     type L = Int :: String :: Boolean :: HNil
     assertSerializable(FromTraversable[L])
-
-    // To satisfy serialization of `ToSizedHList` we must provide a serializable `IsTraversableLike`
-    import scala.collection.generic.IsTraversableLike
-    implicit val hack: IsTraversableLike[List[Int]] { type A = Int } = null
     assertSerializable(ToSizedHList[List, Int, _4])
-
   }
 
   @Test

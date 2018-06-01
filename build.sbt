@@ -12,8 +12,8 @@ import sbtcrossproject.CrossProject
 
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.12.6",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M3")
+  scalaVersion := "2.13.0-M4",
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M4")
 ))
 
 addCommandAlias("root", ";project root")
@@ -22,8 +22,8 @@ addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
 addCommandAlias("validate", ";root;validateJVM;validateJS")
-addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
-addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
+addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;coreJVM/doc")
+addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;coreJS/doc")
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run")
 
 addCommandAlias("runAll", ";examplesJVM/runAll")
@@ -42,9 +42,10 @@ lazy val commonSettings = Seq(
     "-feature",
     "-Xfuture",
     "-language:higherKinds,implicitConversions",
-    "-Xfatal-warnings",
+    //"-Xfatal-warnings",
     "-deprecation",
-    "-unchecked"
+    "-unchecked",
+    "-Ymacro-annotations"
   ),
   scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 12)) =>
@@ -237,16 +238,21 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
-    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
+      // if scala 2.13+ is used, quasiquotes and macro-annotations are merged into scala-reflect
+      case Some((2, scalaMajor)) if scalaMajor >= 13 => Seq()
       // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
+      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+        )
       // in Scala 2.10, quasiquotes are provided by macro paradise
-      case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary)
+      case Some((2, 10)) => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch),
+          "org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary
+        )
     }
   }
 )
@@ -293,7 +299,7 @@ lazy val noPublishSettings =
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
-    if(scalaVersion.value == "2.13.0-M3") Set()
+    if(scalaVersion.value == "2.13.0-M4") Set()
     else {
       val previousVersion = if(scalaVersion.value == "2.12.6") "2.3.2" else "2.3.0"
       val previousSJSVersion = "0.6.7"
