@@ -1,7 +1,6 @@
 package shapeless
 
 import scala.language.reflectiveCalls
-import scala.collection.Factory
 import org.junit.Test
 
 
@@ -248,14 +247,14 @@ object LowPriorityDerivationTests {
           val tc = instance[Double](_ => "Double")
         }
 
-      implicit def mkCollWriter[M[_], T]
+      implicit def mkCollWriter[T]
        (implicit
-         underlying: TC[T],
-         cbf: Factory[T, M[T]]
-       ): MkStdTC[M[T]] =
-        new MkStdTC[M[T]] {
-          lazy val tc = instance[M[T]](n => s"${cbf.newBuilder.result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
+         underlying: TC[T]
+       ): MkStdTC[List[T]] = {
+        new MkStdTC[List[T]] {
+          lazy val tc = instance[List[T]](n => s"List[${underlying.msg(n - 1)}]")
         }
+       }
     }
 
     trait MkGenericTupleTC[T] extends MkTC[T]
@@ -389,12 +388,12 @@ class LowPriorityDerivationTests {
 
   def validateTC[T: TC](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC[T].msg(n)
-    assert(expected == msg)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
   }
 
   def validateTC0[T: TC0](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC0[T].msg(n)
-    assert(expected == msg)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
   }
 
   def validateTCR[T](expected: String, n: Int = Int.MaxValue)(implicit tcr: TCR[T]): Unit = {
