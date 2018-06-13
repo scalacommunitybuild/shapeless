@@ -139,9 +139,9 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
    * one greater than this collection.
    */
   def +:(elem : A0)(implicit cbf : BuildFrom[Repr, A0, Repr]) = {
-    val builder = cbf.apply(s.unsized)
+    val builder = cbf.newBuilder(s.unsized)
     builder += elem
-    builder ++= s.unsized.toIterator
+    builder ++= s.unsized.iterator
     wrap[Repr, Succ[L]](builder.result)
   }
   
@@ -150,8 +150,8 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
    * one greater than this collection.
    */
    def :+(elem : A0)(implicit cbf : BuildFrom[Repr, A0, Repr]) = {
-    val builder = cbf.apply(s.unsized)
-    builder ++= s.unsized.toIterator
+    val builder = cbf.newBuilder(s.unsized)
+    builder ++= s.unsized.iterator
     builder += elem
     wrap[Repr, Succ[L]](builder.result)
   }
@@ -168,8 +168,8 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
       ev : AdditiveCollection[That]): Sized[That, sum.Out] = {
       val thisRepr: Repr = s.unsized
       val thatRepr: That = that.unsized
-      val thisIter: Iterator[A0] = conv(thisRepr).toIterator
-      val thatIter: Iterator[B] = convThat.conversion(thatRepr).toIterator
+      val thisIter: Iterator[A0] = conv(thisRepr).iterator
+      val thatIter: Iterator[B] = convThat.conversion(thatRepr).iterator
       val concd: Iterator[B] = thisIter ++ thatIter
       val blah: That = cbf.fromSpecific(concd)
       wrap[That, sum.Out](blah)
@@ -248,8 +248,8 @@ object AdditiveCollection {
   implicit def listAdditiveCollection[T]: AdditiveCollection[List[T]] =
     new AdditiveCollection[List[T]] {}
 
-  implicit def streamAdditiveCollection[T]: AdditiveCollection[Stream[T]] =
-    new AdditiveCollection[Stream[T]] {}
+  implicit def streamAdditiveCollection[T]: AdditiveCollection[LazyList[T]] =
+    new AdditiveCollection[LazyList[T]] {}
 
   implicit def queueAdditiveCollection[T]: AdditiveCollection[Queue[T]] =
     new AdditiveCollection[Queue[T]] {}

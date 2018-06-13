@@ -915,30 +915,33 @@ object tuple {
    *
    * @author Alexandre Archambault
    */
-  trait ToTraversable[T, M[_]] extends DepFn1[T] with Serializable {
+  trait ToIterable[T, M[_]] extends DepFn1[T] with Serializable {
     type Lub
     type Out = M[Lub]
   }
 
-  object ToTraversable {
+  object ToIterable {
     def apply[T, M[_]]
-      (implicit toTraversable: ToTraversable[T, M]): Aux[T, M, toTraversable.Lub] = toTraversable
+      (implicit toIterable: ToIterable[T, M]): Aux[T, M, toIterable.Lub] = toIterable
 
-    type Aux[T, M[_], Lub0] = ToTraversable[T, M] { type Lub = Lub0 }
+    type Aux[T, M[_], Lub0] = ToIterable[T, M] { type Lub = Lub0 }
 
-    implicit def toTraversableNothing[M[_]](implicit tt: hl.ToTraversable.Aux[HNil, M, Nothing]): Aux[Unit, M, Nothing] =
-      new ToTraversable[Unit, M] {
+    implicit def toIterableNothing[M[_]](implicit tt: hl.ToIterable.Aux[HNil, M, Nothing]): Aux[Unit, M, Nothing] =
+      new ToIterable[Unit, M] {
         type Lub = Nothing
         def apply(t: Unit) = tt(HNil)
       }
 
-    implicit def toTraversable[T, L <: HList, M[_], Lub]
-      (implicit gen: Generic.Aux[T, L], toTraversable: hl.ToTraversable.Aux[L, M, Lub]): Aux[T, M, Lub] =
-        new ToTraversable[T, M] {
-          type Lub = toTraversable.Lub
+    implicit def toIterable[T, L <: HList, M[_], Lub]
+      (implicit gen: Generic.Aux[T, L], toIterable: hl.ToIterable.Aux[L, M, Lub]): Aux[T, M, Lub] =
+        new ToIterable[T, M] {
+          type Lub = toIterable.Lub
           def apply(t: T) = gen.to(t).to[M]
         }
   }
+
+  val ToTraversable = ToIterable
+  type ToTraversable[T, M[_]] = ToIterable[T, M]
 
   /**
    * Type class supporting conversion of this tuple to a `List` with elements typed as the least upper bound
@@ -956,14 +959,14 @@ object tuple {
     def apply[T, Lub](implicit toList: ToList[T, Lub]): Aux[T, Lub, toList.Out] = toList
 
     implicit def toList[T, Lub]
-      (implicit toTraversable: ToTraversable.Aux[T, List, Lub]): Aux[T, Lub, List[Lub]] =
+      (implicit toIterable: ToIterable.Aux[T, List, Lub]): Aux[T, Lub, List[Lub]] =
         new ToList[T, Lub] {
           type Out = List[Lub]
-          def apply(t: T) = toTraversable(t)
+          def apply(t: T) = toIterable(t)
         }
 
     implicit def toListNothing[T]
-      (implicit toTraversable: ToTraversable.Aux[T, List, Nothing]): Aux[T, Nothing, List[Nothing]] =
+      (implicit toIterable: ToIterable.Aux[T, List, Nothing]): Aux[T, Nothing, List[Nothing]] =
         toList[T, Nothing]
   }
 
@@ -983,14 +986,14 @@ object tuple {
     def apply[T, Lub](implicit toArray: ToArray[T, Lub]): Aux[T, Lub, toArray.Out] = toArray
 
     implicit def toArray[T, Lub]
-      (implicit toTraversable: ToTraversable.Aux[T, Array, Lub]): Aux[T, Lub, Array[Lub]] =
+      (implicit toIterable: ToIterable.Aux[T, Array, Lub]): Aux[T, Lub, Array[Lub]] =
         new ToArray[T, Lub] {
           type Out = Array[Lub]
-          def apply(t: T) = toTraversable(t)
+          def apply(t: T) = toIterable(t)
         }
 
     implicit def toArrayNothing[T]
-      (implicit toTraversable: ToTraversable.Aux[T, Array, Nothing]): Aux[T, Nothing, Array[Nothing]] =
+      (implicit toIterable: ToIterable.Aux[T, Array, Nothing]): Aux[T, Nothing, Array[Nothing]] =
         toArray[T, Nothing]
   }
 

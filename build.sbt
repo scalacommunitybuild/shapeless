@@ -42,7 +42,7 @@ lazy val commonSettings = Seq(
     "-feature",
     "-Xfuture",
     "-language:higherKinds,implicitConversions",
-    //"-Xfatal-warnings",
+    "-Xfatal-warnings",
     "-deprecation",
     "-unchecked",
     "-Ymacro-annotations"
@@ -185,7 +185,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1")
         case _ => Seq()
       }
     }

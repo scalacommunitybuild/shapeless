@@ -41,7 +41,6 @@ trait LowPriorityTypeable {
  */
 object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import java.{ lang => jl }
-  import scala.collection.{ GenMap, GenTraversable }
   import scala.reflect.ClassTag
   import syntax.typeable._
 
@@ -220,11 +219,11 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def describe = s"Right[${castB.describe}]"
     }
 
-  /** Typeable instance for `GenTraversable`.
+  /** Typeable instance for `Iterable`.
    *  Note that the contents be will tested for conformance to the element type. */
-  implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with GenTraversable[T]] =
-    // Nb. the apparently redundant `with GenTraversable[T]` is a workaround for a
+  implicit def genIterableTypeable[CC[X] <: Iterable[X], T]
+    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with Iterable[T]] =
+    // Nb. the apparently redundant `with Iterable[T]` is a workaround for a
     // Scala 2.10.x bug which causes conflicts between this instance and `anyTypeable`.
     new Typeable[CC[T]] {
       def cast(t: Any): Option[CC[T]] =
@@ -239,12 +238,12 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y], K, V]
-    (implicit ev: M[K, V] <:< GenMap[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]): Typeable[M[K, V]] =
+    (implicit ev: M[K, V] <:< Map[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]): Typeable[M[K, V]] =
     new Typeable[M[K, V]] {
       def cast(t: Any): Option[M[K, V]] =
         if(t == null) None
         else if(mM.runtimeClass isAssignableFrom t.getClass) {
-          val m = t.asInstanceOf[GenMap[Any, Any]]
+          val m = t.asInstanceOf[Map[Any, Any]]
           if(m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]])
           else None
         } else None

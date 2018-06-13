@@ -579,11 +579,11 @@ object hlist {
    * Serializable if the `Factory`s it implicitly finds are too.
    * Note that the `Factory`s from the standard library are *not*
    * serializable. See the tests for how to make your own serializable
-   * `Factory` available to `ToTraversable`.
+   * `Factory` available to `ToIterable`.
    *
    * @author Alexandre Archambault
    */
-  trait ToTraversable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
+  trait ToIterable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
     type Lub
     def builder(): mutable.Builder[Lub, M[Lub]]
     def append[LLub](l: L, b: mutable.Builder[LLub, M[LLub]], f: Lub => LLub): Unit
@@ -596,27 +596,27 @@ object hlist {
     }
   }
 
-  object ToTraversable {
+  object ToIterable {
     def apply[L <: HList, M[_]]
-      (implicit toTraversable: ToTraversable[L, M]): Aux[L, M, toTraversable.Lub] = toTraversable
+      (implicit toIterable: ToIterable[L, M]): Aux[L, M, toIterable.Lub] = toIterable
 
-    type Aux[L <: HList, M[_], Lub0] = ToTraversable[L, M] { type Lub = Lub0 }
+    type Aux[L <: HList, M[_], Lub0] = ToIterable[L, M] { type Lub = Lub0 }
 
-    implicit def hnilToTraversable[L <: HNil, M[_], T]
+    implicit def hnilToIterable[L <: HNil, M[_], T]
       (implicit cbf : Factory[T, M[T]]) : Aux[L, M, T] =
-        new ToTraversable[L, M] {
+        new ToIterable[L, M] {
           type Lub = T
           def builder() = cbf.newBuilder
           def append[LLub](l : L, b : mutable.Builder[LLub, M[LLub]], f : Lub => LLub) = {}
         }
 
-    implicit def hnilToTraversableNothing[L <: HNil, M[_]]
+    implicit def hnilToIterableNothing[L <: HNil, M[_]]
       (implicit cbf : Factory[Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
-        hnilToTraversable[L, M, Nothing]
+        hnilToIterable[L, M, Nothing]
 
-    implicit def hsingleToTraversable[T, M[_], Lub0]
+    implicit def hsingleToIterable[T, M[_], Lub0]
       (implicit ev : T <:< Lub0, cbf : Factory[Lub0, M[Lub0]]) : Aux[T :: HNil, M, Lub0] =
-        new ToTraversable[T :: HNil, M] {
+        new ToIterable[T :: HNil, M] {
           type Lub = Lub0
           def builder() = cbf.newBuilder
           def append[LLub](l : T :: HNil, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub) = {
@@ -624,12 +624,12 @@ object hlist {
           }
         }
 
-    implicit def hlistToTraversable[H1, H2, T <: HList, LubT, Lub0, M[_]]
+    implicit def hlistToIterable[H1, H2, T <: HList, LubT, Lub0, M[_]]
       (implicit
        tttvs  : Aux[H2 :: T, M, LubT],
        u      : Lub[H1, LubT, Lub0],
        cbf    : Factory[Lub0, M[Lub0]]) : Aux[H1 :: H2 :: T, M, Lub0] =
-        new ToTraversable[H1 :: H2 :: T, M] {
+        new ToIterable[H1 :: H2 :: T, M] {
           type Lub = Lub0
           def builder() = cbf.newBuilder
           def append[LLub](l : H1 :: H2 :: T, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub): Unit = {
@@ -638,19 +638,22 @@ object hlist {
         }
   }
 
+  val ToTraversable = ToIterable
+  type ToTraversable[L <: HList, M[_]] = ToIterable[L, M]
+
   /**
     * Type class supporting conversion of this `HList` to a `M` with elements typed as
     * a minimal `Coproduct` Cop such as each type of the elements of L appears once in Cop.
     *
     * @author Valentin Kasas
     */
-  trait ToCoproductTraversable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
+  trait ToCoproductIterable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
     type Cop <: Coproduct
     type Out = M[Cop]
   }
 
-  trait LowPriorityToCoproductTraversable {
-    type Aux[L <: HList, M[_], C <: Coproduct] = ToCoproductTraversable[L, M] {type Cop = C}
+  trait LowPriorityToCoproductIterable {
+    type Aux[L <: HList, M[_], C <: Coproduct] = ToCoproductIterable[L, M] {type Cop = C}
 
     /**
       * Auxiliary type class witnessing that type `T` is not a member of `Coproduct` `C`
@@ -666,48 +669,48 @@ object hlist {
          notInTail: NotIn[CT, T]): NotIn[CH :+: CT, T] = new NotIn[CH :+: CT, T]{}
     }
 
-    implicit def hconsToCoproductTraversable1[LH, LT <: HList, M[_], CT <: Coproduct]
+    implicit def hconsToCoproductIterable1[LH, LT <: HList, M[_], CT <: Coproduct]
       (implicit
        coproductOfT  : Aux[LT, M, CT],
        cbf           : Factory[CT, M[CT]],
-       asTraversable : M[CT] <:< Traversable[CT],
+       asIterable    : M[CT] <:< Iterable[CT],
        injectOut     : coproduct.Inject[CT, LH]): Aux[LH :: LT, M, CT] =
-        new ToCoproductTraversable[LH :: LT, M] {
+        new ToCoproductIterable[LH :: LT, M] {
           type Cop = CT
           def apply(l : LH :: LT): Out = {
             val builder = cbf.newBuilder
             builder += injectOut(l.head)
-            asTraversable(coproductOfT(l.tail)).foreach( builder += _)
+            asIterable(coproductOfT(l.tail)).foreach( builder += _)
             builder.result()
           }
         }
   }
 
-  object ToCoproductTraversable extends LowPriorityToCoproductTraversable{
+  object ToCoproductIterable extends LowPriorityToCoproductIterable{
 
-    implicit def hnilToCoproductTraversable[L <: HNil, M[_]]
+    implicit def hnilToCoproductIterable[L <: HNil, M[_]]
     (implicit cbf: Factory[CNil, M[CNil]]): Aux[L, M, CNil] =
-      new ToCoproductTraversable[L, M] {
+      new ToCoproductIterable[L, M] {
         type Cop = CNil
         def apply(l: L) = cbf.newBuilder.result()
       }
 
 
-    implicit def hconsToCoproductTraversable0[LH, LT <: HList, M[_], CT <: Coproduct]
+    implicit def hconsToCoproductIterable0[LH, LT <: HList, M[_], CT <: Coproduct]
       (implicit
        coproductOfT  : Aux[LT, M, CT],
        cbf           : Factory[LH :+: CT, M[LH :+: CT]],
-       asTraversable : M[CT] <:< Traversable[CT],
+       asIterable    : M[CT] <:< Iterable[CT],
        notIn         : NotIn[CT, LH],
        injectOut     : coproduct.Inject[LH :+: CT, LH],
        basisTail     : coproduct.Basis[LH :+: CT,CT]): Aux[LH :: LT, M, LH :+: CT] =
-        new ToCoproductTraversable[LH :: LT, M] {
+        new ToCoproductIterable[LH :: LT, M] {
           type Cop = LH :+: CT
           def apply(l : LH :: LT): Out = {
             val builder = cbf.newBuilder
             builder += injectOut(l.head)
             val tail = coproductOfT(l.tail)
-            asTraversable(tail).foreach(elem => builder += elem.embed[Cop])
+            asIterable(tail).foreach(elem => builder += elem.embed[Cop])
             builder.result()
           }
         }
@@ -716,17 +719,17 @@ object hlist {
   /**
    * Type aliases and constructors provided for backward compatibility
    **/
-  type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
+  type ToArray[L <: HList, Lub] = ToIterable.Aux[L, Array, Lub]
   def ToArray[L <: HList, Lub](implicit toArray: ToArray[L, Lub]) = toArray
 
-  type ToList[L <: HList, Lub] = ToTraversable.Aux[L, List, Lub]
+  type ToList[L <: HList, Lub] = ToIterable.Aux[L, List, Lub]
   def ToList[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
 
   /**
    * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
    * as the least upper bound Lub of the types of the elements of this `HList`.
    *
-   * About serializability, see the comment in `ToTraversable`.
+   * About serializability, see the comment in `ToIterable`.
    *
    * @author Alexandre Archambault
    */
@@ -765,15 +768,15 @@ object hlist {
 
     implicit def hlistToSized[H1, H2, T <: HList, LT, L, N0 <: Nat, M[_]]
       (implicit
-       tts  : Aux[H2 :: T, M, LT, N0],
-       u    : Lub[H1, LT, L],
-       tvs2 : IsIterableLike[M[LT]] { type A = LT }, // tvs2, tev, and tcbf are required for the call to map below
-       tev  : AdditiveCollection[M[LT]],
-       f    : Factory[L, M[L]],
-       tcbf : BuildFrom[M[L], L, M[L]],
+       tts   : Aux[H2 :: T, M, LT, N0],
+       u     : Lub[H1, LT, L],
+       tvs2  : IsIterableLike[M[LT]] { type A = LT }, // tvs2, tev, and tcbf are required for the call to map below
+       tev   : AdditiveCollection[M[LT]],
+       f     : Factory[L, M[L]],
+       tcbf  : BuildFrom[M[L], L, M[L]],
        tcbf2 : BuildFrom[M[LT], L, M[L]],
-       tvs  : IsIterableLike[M[L]] { type A = L }, // tvs, cbf, and ev are required for the call to +: below
-       ev   : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
+       tvs   : IsIterableLike[M[L]] { type A = L }, // tvs, tcbf2, and ev are required for the call to +: below
+       ev    : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
         new ToSized[H1 :: H2 :: T, M] {
           type Lub = L
           type N = Succ[N0]

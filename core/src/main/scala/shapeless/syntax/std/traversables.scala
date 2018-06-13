@@ -18,30 +18,28 @@ package shapeless
 package syntax
 package std
 
-import scala.collection.GenTraversable
-
 /**
- * Conversions between `Traversables` and `HLists`.
+ * Conversions between `Iterables` and `HLists`.
  * 
- * The implicit defined by this object enhances `Traversables` with a `toHList` method which constructs an equivalently
+ * The implicit defined by this object enhances `Iterables` with a `toHList` method which constructs an equivalently
  * typed [[shapeless.HList]] if possible. 
  * 
  * @author Miles Sabin
  * @author Rob Norris
  */
-object traversable {
-  implicit def traversableOps[T](t : T)(implicit ev: T => GenTraversable[_]) = new TraversableOps(t)
-  implicit def traversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) = new TraversableOps2(as)
+object iterable {
+  implicit def traversableOps[T](t : T)(implicit ev: T => Iterable[_]) = new IterableOps(t)
+  implicit def traversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) = new IterableOps2(as)
 }
 
-final class TraversableOps[T](t : T)(implicit ev: T => GenTraversable[_]) {
-  import ops.traversable._
+final class IterableOps[T](t : T)(implicit ev: T => Iterable[_]) {
+  import ops.iterable._
 
-  def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
+  def toHList[L <: HList](implicit fl : FromIterable[L]) : Option[L] = fl(t)
 }
 
-final class TraversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) {
-  import ops.traversable._
+final class IterableOps2[CC[T] <: Iterable[T], A](as: CC[A]) {
+  import ops.iterable._
 
   def toSizedHList(n: Nat)(implicit ts: ToSizedHList[CC, A, n.N]): ts.Out = ts(as)
 }

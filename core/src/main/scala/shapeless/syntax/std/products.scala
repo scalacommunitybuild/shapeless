@@ -53,7 +53,7 @@ final class ProductOps[P](val p: P) extends AnyVal {
   /**
    * Returns a collection `M` whose elements are typed as the Lub of the elements of this product.
    */
-  def to[M[_]](implicit toTraversable: ToTraversable[P, M]): toTraversable.Out = toTraversable(p)
+  def to[M[_]](implicit toIterable: ToIterable[P, M]): toIterable.Out = toIterable(p)
 
   /**
    * Returns a `Map` whose values are typed as the Lub of the values of this product.

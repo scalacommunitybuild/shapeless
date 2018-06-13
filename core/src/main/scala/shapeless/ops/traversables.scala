@@ -20,41 +20,44 @@ package ops
 import scala.collection.{ Iterable, IterableOps }
 import scala.collection.generic.IsIterableLike
 
-object traversable {
+object iterable {
   /**
-   * Type class supporting type safe conversion of `Traversables` to `HLists`. 
+   * Type class supporting type safe conversion of `Iterables` to `HLists`. 
    * 
    * @author Miles Sabin
    */
-  trait FromTraversable[Out <: HList] extends Serializable {
+  trait FromIterable[Out <: HList] extends Serializable {
     def apply(l : Iterable[_]) : Option[Out]
   }
 
   /**
-   * `FromTraversable` type class instances.
+   * `FromIterable` type class instances.
    * 
    * @author Miles Sabin
    */
-  object FromTraversable {
-    def apply[Out <: HList](implicit from: FromTraversable[Out]) = from
+  object FromIterable {
+    def apply[Out <: HList](implicit from: FromIterable[Out]) = from
 
     import syntax.typeable._
 
-    implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
+    implicit def hnilFromIterable[T] = new FromIterable[HNil] {
       def apply(l : Iterable[_]) =
         if(l.isEmpty) Some(HNil) else None 
     }
     
-    implicit def hlistFromTraversable[OutH, OutT <: HList]
-      (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
+    implicit def hlistFromIterable[OutH, OutT <: HList]
+      (implicit flt : FromIterable[OutT], oc : Typeable[OutH]) = new FromIterable[OutH :: OutT] {
         def apply(l : Iterable[_]) : Option[OutH :: OutT] =
           if(l.isEmpty) None
           else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
     }
   }
 
+  val FromTraversable = FromIterable
+  type FromTraversable[Out <: HList] = FromIterable[Out]
+
   /**
-   * Type class supporting type safe conversion of `Traversables` to `HLists` of a specific length.
+   * Type class supporting type safe conversion of `Iterables` to `HLists` of a specific length.
    * 
    * @author Rob Norris
    */

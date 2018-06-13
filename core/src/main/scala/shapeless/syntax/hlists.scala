@@ -579,13 +579,13 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Converts this `HList` to a `M` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
-  def to[M[_]](implicit ts : ToTraversable[L, M]) : ts.Out = ts(l)
+  def to[M[_]](implicit ts : ToIterable[L, M]) : ts.Out = ts(l)
 
   /**
    * Converts this `HList` to an ordinary `List` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
-  def toList[Lub](implicit toTraversableAux : ToTraversable.Aux[L, List, Lub]) : toTraversableAux.Out = toTraversableAux(l)
+  def toList[Lub](implicit toIterableAux : ToIterable.Aux[L, List, Lub]) : toIterableAux.Out = toIterableAux(l)
 
   /**
    * Converts this `HList` to an `Array` of elements typed as the least upper bound of the types of the elements
@@ -595,7 +595,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
-  def toArray[Lub](implicit toTraversableAux : ToTraversable.Aux[L, Array, Lub]) : toTraversableAux.Out = toTraversableAux(l)
+  def toArray[Lub](implicit toIterableAux : ToIterable.Aux[L, Array, Lub]) : toIterableAux.Out = toIterableAux(l)
 
   /**
     * Converts this `HList` to a `M` of elements embedded in a minimal `Coproduct` encompassing the types of every
@@ -607,9 +607,9 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     *
     * Would return a Vector[Int :+: String :+: CNil]
     *
-    * Note that the `M` container must extend `Traversable`, which means that `Array` cannot be used.
+    * Note that the `M` container must extend `Iterable`, which means that `Array` cannot be used.
     */
-  def toCoproduct[M[_] <: Traversable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
+  def toCoproduct[M[_] <: Iterable[_]](implicit toCoproductIterable: ToCoproductIterable[L, M]): toCoproductIterable.Out = toCoproductIterable(l)
 
   /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
@@ -620,9 +620,9 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   /**
    * Displays all elements of this hlist in a string using start, end, and separator strings.
     */
-  // TODO: Remove the toTraversable instance at the next major release.
+  // TODO: Remove the toIterable instance at the next major release.
   def mkString(start: String, sep: String, end: String)
-    (implicit toTraversable: ToTraversable[L, List] = null): String = {
+    (implicit toIterable: ToIterable[L, List] = null): String = {
     import shapeless.{HList, HNil, :: => HCons}
 
     @annotation.tailrec

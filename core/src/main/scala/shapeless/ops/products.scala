@@ -114,30 +114,33 @@ object product {
     ): Aux[P, K0, Nothing] = productToMap[P, K0, Nothing, HNil]
   }
 
-  trait ToTraversable[P, M[_]] extends DepFn1[P] {
+  trait ToIterable[P, M[_]] extends DepFn1[P] {
     type Lub
     type Out = M[Lub]
   }
 
-  object ToTraversable {
-    def apply[P, M[_]](implicit toTraversable: ToTraversable[P, M]): Aux[P, M, toTraversable.Lub] = toTraversable
+  object ToIterable {
+    def apply[P, M[_]](implicit toIterable: ToIterable[P, M]): Aux[P, M, toIterable.Lub] = toIterable
 
-    type Aux[P, M[_], Lub0] = ToTraversable[P, M] { type Lub = Lub0 }
+    type Aux[P, M[_], Lub0] = ToIterable[P, M] { type Lub = Lub0 }
 
-    implicit def productToTraversable[P, M[_], Lub0, L <: HList](implicit
+    implicit def productToIterable[P, M[_], Lub0, L <: HList](implicit
       gen: Generic.Aux[P, L],
-      toTraversable: ops.hlist.ToTraversable.Aux[L, M, Lub0]
+      toIterable: ops.hlist.ToIterable.Aux[L, M, Lub0]
     ): Aux[P, M, Lub0] =
-      new ToTraversable[P, M] {
+      new ToIterable[P, M] {
         type Lub = Lub0
-        def apply(p: P) = toTraversable(gen.to(p))
+        def apply(p: P) = toIterable(gen.to(p))
       }
 
-    implicit def emptyProductToTraversableNothing[P, M[_]](implicit
+    implicit def emptyProductToIterableNothing[P, M[_]](implicit
       gen: Generic.Aux[P, HNil],
-      toTraversable: ops.hlist.ToTraversable.Aux[HNil, M, Nothing]
-    ): Aux[P, M, Nothing] = productToTraversable[P, M, Nothing, HNil]
+      toIterable: ops.hlist.ToIterable.Aux[HNil, M, Nothing]
+    ): Aux[P, M, Nothing] = productToIterable[P, M, Nothing, HNil]
   }
+
+  val ToTraversable = ToIterable
+  type ToTraversable[T, M[_]] = ToIterable[T, M]
 
   trait ToSized[P, M[_]] extends DepFn1[P] {
     type Lub

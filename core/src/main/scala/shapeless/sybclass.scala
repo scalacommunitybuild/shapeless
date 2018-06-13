@@ -64,7 +64,7 @@ object Data extends Data1 {
       def gmapQ(t: List[T]) = t.map(qt.value(_))
     }
 
-  implicit def genTraversableData[P, C[X] <: GenTraversable[X], T, R]
+  implicit def genTraversableData[P, C[X] <: Iterable[X], T, R]
     (implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, C[T], R] =
       new Data[P, C[T], R] {
         def gmapQ(t: C[T]) =
@@ -168,7 +168,7 @@ object DataT extends DataT1 {
 
   implicit def genMapDataT[F <: Poly, M[X, Y], K, V, U]
     (implicit
-      ev: M[K, V] <:< GenMap[K, V],
+      ev: M[K, V] <:< Map[K, V],
       fv: Lazy[Case1.Aux[F, V, U]],
       cbf: Factory[(K, U), M[K, U]]
     ): Aux[F, M[K, V], M[K, U]] =
