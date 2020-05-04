@@ -12,8 +12,8 @@ import sbtcrossproject.CrossProject
 val scala211 = "2.11.12"
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := Seq("2.10.7", scala211, "2.12.10", "2.13.1"),
+  scalaVersion := "2.13.2",
+  crossScalaVersions := Seq("2.10.7", scala211, "2.12.10", "2.13.2"),
   mimaFailOnNoPrevious := false
 ))
 
@@ -40,7 +40,6 @@ lazy val scoverageSettings = Seq(
 val scalacOptionsAll = Seq(
   "-feature",
   "-language:higherKinds,implicitConversions",
-  "-Xfatal-warnings",
   "-deprecation",
   "-unchecked",
 )
@@ -64,9 +63,6 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("releases"),
     Resolver.sonatypeRepo("snapshots")
   ),
-
-  scalacOptions in console in Compile -= "-Xfatal-warnings",
-  scalacOptions in console in Test    -= "-Xfatal-warnings",
 
   initialCommands in console := """import shapeless._""",
 
@@ -97,8 +93,6 @@ lazy val commonJsSettings = Seq(
     val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
     s"-P:scalajs:mapSourceURI:$a->$g/"
   },
-
-  scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
 
   parallelExecution in Test := false,
   coverageEnabled := false
