@@ -687,7 +687,7 @@ class TypeableTests {
     assertEquals("***.type", Typeable[***.type].describe)
     assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
     assertEquals("|+|.type", Typeable[|+|.type].describe)
-    assertEquals("Symbol('witness)", Typeable[witness.T].describe)
+    assertEquals("Symbol(Symbol(witness))", Typeable[witness.T].describe)
   }
 
   @Test
